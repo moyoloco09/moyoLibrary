@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Student table</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<body>
+<h1>Moyoloco's Library</h1>
+<form id="booksForm">
+  <div class="mb-3 mt-3">
+    <label for="title">Title:</label>
+    <input type="text" class="form-control" id="title" placeholder="Enter title" name="title" required>
+  </div>
+  <div class="mb-3 mt-3">
+    <label for="author">Author:</label>
+    <input type="text" class="form-control" id="author" placeholder="Enter author" name="author" required>
+  </div>
+  <div class="mb-3 mt-3">
+    <label for="yearPublished">Year published:</label>
+    <input type="number" class="form-control" id="yearPublished" placeholder="Enter year published" name="yearPublished" required>
+  </div>
+  <div class="mb-3 mt-3">
+    <label for="genre">Genre:</label>
+    <input type="text" class="form-control" id="genre" placeholder="Enter genre" name="genre" required>
+  </div>
+  <div class="mb-3 mt-3">
+    <label for="description">Description:</label>
+    <input type="text" class="form-control" id="description" placeholder="Enter description" name="description" required>
+  </div>
+  <button type="submit" class="btn btn-dark">Submit</button>
+</form>
+<br>
+<table class="table table-dark" id="booksTable">
+  <thead>
+  <tr>
+    <th>id</th>
+    <th>title</th>
+    <th>author</th>
+    <th>yearPublished</th>
+    <th>genre</th>
+    <th>description</th>
+    <th>options</th>
+  </tr>
+  </thead>
+  <tbody>
+  </tbody>
+  <script>
+    // API URL
+    const apiURL='http://localhost:8080/books';
+    // Function used to load students from the API and fill the table
+    async function loadBooks(){
+      try{
+        const response=await fetch(apiURL);
+        const books=await response.json();
+        // Select table body
+        const tableBody = document.querySelector('#booksTable tbody');
+
+        // Iterate over the received books from the API
+        books.forEach(book => {
+          const row=document.createElement('tr');
+          const idCell=document.createElement('td')
+          const titleCell=document.createElement('td')
+          const authorCell=document.createElement('td')
+          const yearPublishedCell=document.createElement('td')
+          const genreCell=document.createElement('td')
+          const descriptionCell=document.createElement('td')
+          const optionsCell=document.createElement('td')
+          const deleteButton=document.createElement('button')
+          const updateButton=document.createElement('button')
+
+          // Assign row, cells and buttons IDs
+          row.id="row"+book.id
+          idCell.id="id"+book.id
+          titleCell.id ="title"+book.id
+          authorCell.id ="author"+book.id
+          yearPublishedCell.id="yearPublished"+book.id
+          genreCell.id="genre"+book.id
+          descriptionCell.id="description"+book.id
+          deleteButton.id="delete"+book.id
+          updateButton.id="update"+book.id
+
+          // Get book data and fill cells
+          idCell.textContent=book.id
+          titleCell.textContent=book.title
+          authorCell.textContent=book.author
+          yearPublishedCell.textContent=book.yearPublished
+          genreCell.textContent=book.genre
+          descriptionCell.textContent=book.description
+
+          // Button configuration
+          deleteButton.textContent='delete'
+          deleteButton.addEventListener('click', ()=>deleteBook(book.id))
+          deleteButton.className='btn btn-danger btn-sm'
+          updateButton.textContent='update'
+          updateButton.addEventListener('click', ()=>updateBook(book.id))
+          updateButton.className='btn btn-warning btn-sm'
+
+          // Filling table
+          row.appendChild(idCell)
+          row.appendChild(titleCell)
+          row.appendChild(authorCell)
+          row.appendChild(yearPublishedCell)
+          row.appendChild(genreCell)
+          row.appendChild(descriptionCell)
+          optionsCell.appendChild(deleteButton)
+          optionsCell.appendChild(updateButton)
+          row.appendChild(optionsCell)
+          tableBody.appendChild(row);
+        });
+      }
+      catch(error){
+        console.error('Failed to load books:', error);
+      }
+    }
+
+    // Function used for deleting a book
+    async function deleteBook(id) {
+      const deleteURL=`${apiURL}/deleteById=${id}`;
+      try{
+        const response=await fetch(deleteURL, {
+          method: 'DELETE'
+        });
+        if(response.ok){
+          alert(`Book with ID ${id} deleted successfully`);
+          // Reload books table
+          document.querySelector('#booksTable tbody').innerHTML = '';
+          await loadBooks()
+        }
+        else{
+          alert('Failed to delete book: '+response.status);
+        }
+      }
+      catch(error){
+        console.error('Failed to connect: ', error);
+      }
+    }
+
+    // Function used to update a book
+    let isEditing=false;
+    async function updateBook(id){
+      // Get the reference to the row and cells that are going to be updated
+      const editRow=document.getElementById("row"+id)
+      const idCell=document.getElementById("id"+id)
+      const titleCell=document.getElementById("title"+id)
+      const authorCell=document.getElementById("author"+id)
+      const yearPublishedCell=document.getElementById("yearPublished"+id)
+      const genreCell=document.getElementById("genre"+id)
+      const descriptionCell=document.getElementById("description"+id)
+      const deleteButton=document.getElementById("delete"+id)
+      const updateButton=document.getElementById("update"+id)
+
+      if(updateButton.textContent==="Save"){
+        isEditing=false;
+        deleteButton.disabled=false
+        console.log(idCell.innerHTML)
+        console.log(id)
+        console.log(titleCell.innerHTML)
+        console.log(authorCell.innerHTML)
+        console.log(yearPublishedCell.innerHTML)
+        console.log(genreCell.innerHTML)
+        console.log(descriptionCell.innerHTML)
+        await saveBookUpdated(idCell.innerHTML, id, titleCell.innerHTML, authorCell.innerHTML,
+                              yearPublishedCell.innerHTML, genreCell.innerHTML, descriptionCell.innerHTML);
+      }
+      else{
+        if(!isEditing){
+          isEditing=true;
+          // Disable the delete button
+          deleteButton.disabled=true
+
+          // Focus on the row being updated
+          editRow.className="table table-striped"
+
+          // Set the cells to editable
+          titleCell.setAttribute('contenteditable', true)
+          authorCell.setAttribute('contenteditable', true)
+          yearPublishedCell.setAttribute('contenteditable', true)
+          genreCell.setAttribute('contenteditable', true)
+          descriptionCell.setAttribute('contenteditable', true)
+
+          updateButton.textContent="Save";
+          updateButton.className="btn btn-primary"
+        }
+        else{
+          alert('Already updating book')
+        }
+      }
+    }
+
+    async function saveBookUpdated(bookId, previousId, updatedTitle, updatedAuthor, updatedYearPublished,
+                                   updatedGenre, updatedDescription){
+      const updateUrl=`${apiURL}/updateById=${previousId}`;
+
+      // Book data
+      const book={
+        id: bookId,
+        title: updatedTitle,
+        author: updatedAuthor,
+        yearPublished: updatedYearPublished,
+        genre: updatedGenre,
+        description: updatedDescription
+      }
+      try{
+        const response = await fetch(updateUrl, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(book)
+        });
+
+        if(response.ok){
+          alert('Book updated successfully');
+          document.querySelector('#booksTable tbody').innerHTML = '';
+          await loadBooks();
+        }
+        else{
+          console.error('Failed to update the book: ', response.status);
+        }
+      }
+      catch(error){
+        console.error('Failed to update the book: ', error);
+      }
+    }
+
+    // Form button listener
+    document.getElementById("booksForm").addEventListener("submit", addStudentsFromForm)
+
+    // Function used for add a book from form
+    async function addStudentsFromForm(event){
+      event.preventDefault();
+      if(!isEditing) {
+        let titleValue = document.getElementById("title").value;
+        let authorValue = document.getElementById("author").value;
+        let yearPublishedValue = document.getElementById("yearPublished").value;
+        let genreValue = document.getElementById("genre").value;
+        let descriptionValue = document.getElementById("description").value;
+
+        try {
+          const response = await fetch(apiURL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              title: titleValue,
+              author: authorValue,
+              yearPublished: yearPublishedValue,
+              genre: genreValue,
+              description: descriptionValue
+            })
+          });
+          if (response.ok) {
+            const newBook = await response.json();
+            console.log(newBook.title)
+            if (newBook.title === "A book with the same title already exists") {
+              alert(newBook.title)
+            } else {
+              alert('Book added successfully');
+              document.querySelector('#booksTable tbody').innerHTML = '';
+              await loadBooks();
+              document.querySelector("#booksForm").reset();
+            }
+          } else {
+            alert('Failed to add book: ' + response.status);
+          }
+        } catch (error) {
+          console.error('Failed to connect:', error);
+        }
+      }
+      else{
+        alert('Finish updating book first')
+      }
+    }
+
+    // Call to function to load students while page is loading
+    window.onload=loadBooks();
+  </script>
+</table>
+</body>
+</html>
