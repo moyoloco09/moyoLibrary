@@ -153,15 +153,14 @@
       const updateButton=document.getElementById("update"+id)
 
       if(updateButton.textContent==="Save"){
+        const cellsToValidate=[titleCell, authorCell, yearPublishedCell, genreCell, descriptionCell];
+        const isEmpty=cellsToValidate.some(cell=>cell.textContent.trim()==="");
+        if(isEmpty) {
+          alert("Fill all the fields before saving");
+          return;
+        }
         isEditing=false;
         deleteButton.disabled=false
-        console.log(idCell.innerHTML)
-        console.log(id)
-        console.log(titleCell.innerHTML)
-        console.log(authorCell.innerHTML)
-        console.log(yearPublishedCell.innerHTML)
-        console.log(genreCell.innerHTML)
-        console.log(descriptionCell.innerHTML)
         await saveBookUpdated(idCell.innerHTML, id, titleCell.innerHTML, authorCell.innerHTML,
                               yearPublishedCell.innerHTML, genreCell.innerHTML, descriptionCell.innerHTML);
       }
@@ -255,10 +254,10 @@
           });
           if (response.ok) {
             const newBook = await response.json();
-            console.log(newBook.title)
-            if (newBook.title === "A book with the same title already exists") {
+            if(newBook.title==="A book with the same title already exists") {
               alert(newBook.title)
-            } else {
+            }
+            else{
               alert('Book added successfully');
               document.querySelector('#booksTable tbody').innerHTML = '';
               await loadBooks();
